@@ -26,6 +26,9 @@ SET(HEADERS
 add_library( Utilities ${SOURCE} ${HEADERS})
 add_library( OpenFace::Utilities ALIAS Utilities)
 
+#find cppzmq wrapper, installed by make of cppzmq
+find_package(cppzmq)
+
 target_include_directories(Utilities PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/OpenFace>)
@@ -35,6 +38,7 @@ target_include_directories(Utilities PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 target_link_libraries(Utilities PUBLIC ${OpenCV_LIBS})
 target_link_libraries(Utilities PUBLIC dlib::dlib)
+target_link_libraries(Utilities cppzmq)
 
 if(${Boost_FOUND})
 	target_include_directories(Utilities PUBLIC ${Boost_INCLUDE_DIRS})
