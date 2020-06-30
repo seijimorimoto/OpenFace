@@ -3,12 +3,13 @@
 
 using namespace Utilities;
 
+// Opens a socket so that it can later send data to the port pointed by the socket.
 bool RecorderSocket::Open(int port, bool is_sequence, bool output_2D_landmarks, bool output_3D_landmarks, bool output_model_params, bool output_pose, bool output_AUs, bool output_gaze,
 	int num_face_landmarks, int num_model_modes, int num_eye_landmarks, const std::vector<std::string>& au_names_class, const std::vector<std::string>& au_names_reg)
 {
+	// Setting up object attributes.
 	this->port = port;
 	this->is_sequence = is_sequence;
-
 	this->output_2D_landmarks = output_2D_landmarks;
 	this->output_3D_landmarks = output_3D_landmarks;
 	this->output_model_params = output_model_params;
@@ -16,40 +17,49 @@ bool RecorderSocket::Open(int port, bool is_sequence, bool output_2D_landmarks, 
 	this->output_AUs = output_AUs;
 	this->output_gaze = output_gaze;
 
-	// Open connection
-	zmq::context_t context(1);
-	this->socket = new zmq::socket_t(context, ZMQ_PUB);
+	// Initialize the socket.
+	zmq::context_t context(1); // Use a single IO thread.
+	this->socket = new zmq::socket_t(context, ZMQ_PUB /* Set this socket as a publisher. */);
 	this->socket->bind("tcp://*:" + std::to_string(this->port));
+	
+	return true;
 }
 
+// Checks whether the internal socket managed by this class has been successfully opened or not.
 bool RecorderSocket::IsOpen()
 {
 	return this->socket != NULL;
 }
 
+// Closes the internal socket managed by this class.
 void RecorderSocket::Close()
 {
 	if (this->IsOpen())
 		this->socket->close();
 }
 
+// Prepares a message and sends it through the socket.
 void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp, bool landmark_detection_success, double landmark_confidence,
 	const cv::Mat_<float>& landmarks_2D, const cv::Mat_<float>& landmarks_3D, const cv::Mat_<float>& pdm_model_params, const cv::Vec6f& rigid_shape_params, cv::Vec6f& pose_estimate,
 	const cv::Point3f& gazeDirection0, const cv::Point3f& gazeDirection1, const cv::Vec2f& gaze_angle, const std::vector<cv::Point2f>& eye_landmarks2d, const std::vector<cv::Point3f>& eye_landmarks3d,
 	const std::vector<std::pair<std::string, double> >& au_intensities, const std::vector<std::pair<std::string, double> >& au_occurences)
 {
+	// Only proceeds if the socket is opened.
 	if (!this->IsOpen())
 	{
 		std::cout << "The socket is not open, exiting" << std::endl;
 		exit(1);
 	}
 
-	zmq::message_t message(20);
+	// String stream that will be used for creating the message that will be sent.
 	std::stringstream ss;
 
+	// Setting the format that will be used for floating point numbers in ss.
 	ss << std::fixed << std::noshowpoint;	
-	ss << "Meta:";
 
+	// Set the title of the first message that will be sent (metadata).
+	// Set the content of the message based on whether the data computed is from a sequence or not.
+	ss << "Meta:";
 	if (is_sequence)
 	{
 		ss << std::setprecision(3);
@@ -65,8 +75,10 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 		ss << "face_id:" << face_id << ",confidence:" << landmark_confidence;
 	}
 
+	// Send the first message.
 	SendData(ss);
 
+	// Prepare and send a message containing the gaze information if it is supposed to be sent.
 	if (output_gaze)
 	{
 		ss << "Gaze:";
@@ -112,6 +124,7 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 		SendData(ss);
 	}
 
+	// Prepare and send a message containing the pose information if it is supposed to be sent.
 	if (output_pose)
 	{
 		ss << "Pose:";
@@ -122,6 +135,7 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 		SendData(ss);
 	}
 
+	// Prepare and send a message containing the 2D landmarks information if it is supposed to be sent.
 	if (output_2D_landmarks)
 	{
 		ss << "Landmarks2D:";
@@ -142,6 +156,7 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 		SendData(ss);
 	}
 
+	// Prepare and send a message containing the 3D landmarks information if it is supposed to be sent.
 	if (output_3D_landmarks)
 	{
 		ss << "Landmarks3D:";
@@ -166,6 +181,7 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 		SendData(ss);
 	}
 
+	// Prepare and send a message containing the model parameters information if it is supposed to be sent.
 	if (output_model_params)
 	{
 		ss << "ModelParams:";
@@ -182,6 +198,7 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 		SendData(ss);
 	}
 
+	// Prepare and send a message containing the AUs information if it is supposed to be sent.
 	if (output_AUs)
 	{
 		ss << "AUs:";
@@ -202,6 +219,7 @@ void RecorderSocket::WriteMessage(int face_id, int frame_num, double time_stamp,
 	}
 }
 
+// Sends the data contained in a string stream through the socket. It also clears the string stream.
 void RecorderSocket::SendData(std::stringstream &ss)
 {
 	std::string data = ss.str();
