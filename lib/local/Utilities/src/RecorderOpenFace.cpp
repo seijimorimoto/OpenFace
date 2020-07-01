@@ -159,13 +159,13 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 	if (params.outputToCSV())
 	{
 		csv_filename = out_name + ".csv";
-		results_recorders.push_back(RecorderCSV((fs::path(record_root) / csv_filename).string()));
+		results_recorders.push_back(new RecorderCSV((fs::path(record_root) / csv_filename).string()));
 	}
 	
 	// Add a Socket recorder to the list of RecorderResults if the flag is on.
 	if (params.outputToSocket())
 	{
-		results_recorders.push_back(RecorderSocket(params.outputPort()));
+		results_recorders.push_back(new RecorderSocket(params.outputPort()));
 	}
 
 	// Construct HOG recorder if the flag is on.
@@ -313,7 +313,7 @@ void RecorderOpenFace::WriteObservation()
 	{
 		// If any (i.e. all) of the RecorderResults is not open yet (we take the one in the first
 		// position of the list for simplicity), initialize and open every one of them.
-		if (!results_recorders[0].IsOpen())
+		if (!results_recorders[0]->IsOpen())
 		{
 			// Pre-computing data for initializing the RecorderResults objects.
 			int num_face_landmarks = landmarks_2D.rows / 2;
@@ -355,15 +355,15 @@ void RecorderOpenFace::WriteObservation()
 			// Initialize and open every RecorderResults in the list.
 			for (auto results_recorder : results_recorders)
 			{
-				results_recorder.Init(params, num_face_landmarks, num_model_modes, num_eye_landmarks, au_names_class, au_names_reg);
-				results_recorder.Open();
+				results_recorder->Init(params, num_face_landmarks, num_model_modes, num_eye_landmarks, au_names_class, au_names_reg);
+				results_recorder->Open();
 			}
 		}
 
 		// Write the results data to each RecorderResults object.
 		for (auto results_recorder : results_recorders)
 		{
-			results_recorder.Write(face_id, frame_number, timestamp, landmark_detection_success,
+			results_recorder->Write(face_id, frame_number, timestamp, landmark_detection_success,
 				landmark_detection_confidence, landmarks_2D, landmarks_3D, pdm_params_local, pdm_params_global, head_pose,
 				gaze_direction0, gaze_direction1, gaze_angle, eye_landmarks2D, eye_landmarks3D, au_intensities, au_occurences);
 		}
@@ -544,8 +544,13 @@ void RecorderOpenFace::Close()
 	tracked_writing_thread_started = false;
 	aligned_writing_thread_started = false;
 
+	for (auto results_recorder : results_recorders)
+	{
+		results_recorder->Close();
+		delete results_recorder;
+	}
+
 	hog_recorder.Close();
-	csv_recorder.Close();
 	video_writer.release();
 	metadata_file.close();
 }

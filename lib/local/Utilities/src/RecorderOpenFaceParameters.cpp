@@ -206,3 +206,32 @@ RecorderOpenFaceParameters::RecorderOpenFaceParameters(bool sequence, bool is_fr
 	this->port = port;
 	this->output_to_socket = port >= 0;
 }
+
+RecorderOpenFaceParameters RecorderOpenFaceParameters::operator=(const RecorderOpenFaceParameters& params)
+{
+	RecorderOpenFaceParameters copy;
+	copy.is_sequence = params.is_sequence;
+	copy.is_from_webcam = params.is_from_webcam;
+	copy.output_2D_landmarks = params.output_2D_landmarks;
+	copy.output_3D_landmarks = params.output_3D_landmarks;
+	copy.output_model_params = params.output_model_params;
+	copy.output_pose = params.output_pose;
+	copy.output_AUs = params.output_AUs;
+	copy.output_gaze = params.output_gaze;
+	copy.output_hog = params.output_hog;
+	copy.output_tracked = params.output_tracked;
+	copy.output_aligned_faces = params.output_aligned_faces;
+	copy.output_to_csv = params.output_to_csv;
+	copy.output_to_socket = params.output_to_socket;
+	copy.port = params.port;
+	copy.record_aligned_bad = params.record_aligned_bad;
+	copy.output_codec = params.output_codec;
+	copy.fps_vid_out = params.fps_vid_out;
+	copy.image_format_aligned = params.image_format_aligned;
+	copy.image_format_visualization = params.image_format_visualization;
+	copy.fx = params.fx;
+	copy.fy = params.fy;
+	copy.cx = params.cx;
+	copy.cy = params.cy;
+	return copy;
+}

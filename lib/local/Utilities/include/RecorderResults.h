@@ -1,3 +1,6 @@
+#ifndef RECORDER_RESULTS_H
+#define RECORDER_RESULTS_H
+
 #include <RecorderOpenFaceParameters.h>
 
 namespace Utilities
@@ -36,3 +39,5 @@ namespace Utilities
 		RecorderOpenFaceParameters recordFlags;
 	};
 }
+
+#endif // RECORDER_RESULTS_H
