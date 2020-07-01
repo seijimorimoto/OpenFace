@@ -42,6 +42,9 @@
 // OpenCV includes
 #include <opencv2/core/core.hpp>
 
+// Local files includes
+#include <RecorderResults.h>
+
 namespace Utilities
 {
 
@@ -49,23 +52,31 @@ namespace Utilities
 	/**
 	A class for recording CSV file from OpenFace
 	*/
-	class RecorderCSV {
-
+	class RecorderCSV : public RecorderResults
+	{
 	public:
-
-		// The constructor for the recorder, need to specify if we are recording a sequence or not
+		// Default constructor for the recorder.
 		RecorderCSV();
 
-		// Opening the file and preparing the header for it
-		bool Open(std::string output_file_name, bool is_sequence, bool output_2D_landmarks, bool output_3D_landmarks, bool output_model_params, bool output_pose, bool output_AUs, bool output_gaze,
-			int num_face_landmarks, int num_model_modes, int num_eye_landmarks, const std::vector<std::string>& au_names_class, const std::vector<std::string>& au_names_reg);
+		// Constructor that receives the name of the file where the data is to be recorded to.
+		RecorderCSV(std::string output_file_name);
 
-		bool isOpen() const { return output_file.is_open(); }
+		// Initializes the object with the flags specifying which type of data is to be recorded in each write.
+		// The parameters other than recordFlags are used when writing the header of the output file.
+		void Init(const RecorderOpenFaceParameters& recordFlags, int num_face_landmarks, int num_model_modes, int num_eye_landmarks,
+			const std::vector<std::string>& au_names_class, const std::vector<std::string>& au_names_reg);
+		
+		// Opens the file and prepares the header for it
+		bool Open();
 
-		// Closing the file and cleaning up
+		// Checks whether the file was opened or not.
+		bool IsOpen() { return output_file.is_open(); }
+
+		// Closes the file and performs clean up work.
 		void Close();
 
-		void WriteLine(int face_id, int frame_num, double time_stamp, bool landmark_detection_success, double landmark_confidence,
+		// Writes a line of data to the file.
+		void Write(int face_id, int frame_num, double time_stamp, bool landmark_detection_success, double landmark_confidence,
 			const cv::Mat_<float>& landmarks_2D, const cv::Mat_<float>& landmarks_3D, const cv::Mat_<float>& pdm_model_params, const cv::Vec6f& rigid_shape_params, cv::Vec6f& pose_estimate,
 			const cv::Point3f& gazeDirection0, const cv::Point3f& gazeDirection1, const cv::Vec2f& gaze_angle, const std::vector<cv::Point2f>& eye_landmarks2d, const std::vector<cv::Point3f>& eye_landmarks3d,
 			const std::vector<std::pair<std::string, double> >& au_intensities, const std::vector<std::pair<std::string, double> >& au_occurences);
@@ -78,23 +89,26 @@ namespace Utilities
 		RecorderCSV(const RecorderCSV&& other);
 		RecorderCSV(const RecorderCSV& other);
 
+		// The name of the output file.
+		std::string output_file_name;
+
 		// The actual output file stream that will be written
 		std::ofstream output_file;
+		
+		// How many face landmarks are going to be recorded in each write.
+		int num_face_landmarks;
 
-		// If we are recording results from a sequence each row refers to a frame, if we are recording an image each row is a face
-		bool is_sequence;
+		// How many parameters does the OpenFace model have.
+		int num_model_modes;
 
-		// Keep track of what we are recording
-		bool output_2D_landmarks;
-		bool output_3D_landmarks;
-		bool output_model_params;
-		bool output_pose;
-		bool output_AUs;
-		bool output_gaze;
-
+		// How many eye landmarks are going to be recorded in each write.
+		int num_eye_landmarks;
+		
+		// The sorted names of the AUs that are detected through classification.
 		std::vector<std::string> au_names_class;
-		std::vector<std::string> au_names_reg;
 
+		// The sorted names of the AUs that are detected through regression.
+		std::vector<std::string> au_names_reg;
 	};
 }
 #endif // RECORDER_CSV_H

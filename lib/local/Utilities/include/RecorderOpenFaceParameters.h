@@ -47,10 +47,11 @@ namespace Utilities
 	public:
 
 		// Constructors
+		RecorderOpenFaceParameters() {}
 		RecorderOpenFaceParameters(std::vector<std::string> &arguments, bool sequence, bool is_from_webcam, float fx = -1, float fy = -1, float cx = -1, float cy = -1, double fps_vid_out = 30);
 		RecorderOpenFaceParameters(bool sequence, bool is_from_webcam, bool output_2D_landmarks, bool output_3D_landmarks,
 			bool output_model_params, bool output_pose, bool output_AUs, bool output_gaze, bool output_hog, bool output_tracked,
-			bool output_aligned_faces, bool record_bad = true, float fx = -1, float fy = -1, float cx = -1, float cy = -1, double fps_vid_out = 30);
+			bool output_aligned_faces, bool record_bad = true, bool output_to_csv = true, int port = -1, float fx = -1, float fy = -1, float cx = -1, float cy = -1, double fps_vid_out = 30);
 
 		bool isSequence() const { return is_sequence; }
 		bool isFromWebcam() const { return is_from_webcam; }
@@ -63,10 +64,13 @@ namespace Utilities
 		bool outputHOG() const { return output_hog; }
 		bool outputTracked() const { return output_tracked; }
 		bool outputAlignedFaces() const { return output_aligned_faces; }
+		bool outputToCSV() const { return output_to_csv; }
+		bool outputToSocket() const { return output_to_socket; }
 		std::string outputCodec() const { return output_codec; }
 		std::string imageFormatAligned() const { return image_format_aligned; }
 		std::string imageFormatVisualization() const { return image_format_visualization; }
 		double outputFps() const { return fps_vid_out; }
+		int outputPort() const { return port; }
 
 		bool outputBadAligned() const { return record_aligned_bad; }
 
@@ -95,6 +99,11 @@ namespace Utilities
 		bool output_hog;
 		bool output_tracked;
 		bool output_aligned_faces;
+
+		// Determine the type of RecorderResults that will be used to record the data.
+		bool output_to_csv;
+		bool output_to_socket;
+		int port;
 		
 		// Should the algined faces be recorded even if the detection failed (blank images)
 		bool record_aligned_bad;

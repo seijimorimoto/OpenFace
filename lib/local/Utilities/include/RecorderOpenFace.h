@@ -137,7 +137,7 @@ namespace Utilities
 		std::ofstream metadata_file;
 
 		// The actual output file stream that will be written
-		RecorderCSV csv_recorder;
+		std::vector<RecorderResults> results_recorders;
 		RecorderHOG hog_recorder;
 
 		// The actual temporary storage for the observations

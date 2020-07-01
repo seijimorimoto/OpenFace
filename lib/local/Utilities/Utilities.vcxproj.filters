@@ -86,5 +86,8 @@
     <ClInclude Include="include\RecorderSocket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\RecorderResults.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

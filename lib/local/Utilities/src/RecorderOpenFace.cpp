@@ -33,6 +33,7 @@
 #include "stdafx_ut.h"
 
 #include "RecorderOpenFace.h"
+#include "RecorderSocket.h"
 
 using namespace Utilities;
 
@@ -154,10 +155,20 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 
 	metadata_file << "Camera parameters:" << params.getFx() << "," << params.getFy() << "," << params.getCx() << "," << params.getCy() << std::endl;
 
-	// Create the required individual recorders, CSV, HOG, aligned, video
-	csv_filename = out_name + ".csv";
+	// Add a CSV recorder to the list of RecorderResults if the flag is on.
+	if (params.outputToCSV())
+	{
+		csv_filename = out_name + ".csv";
+		results_recorders.push_back(RecorderCSV((fs::path(record_root) / csv_filename).string()));
+	}
+	
+	// Add a Socket recorder to the list of RecorderResults if the flag is on.
+	if (params.outputToSocket())
+	{
+		results_recorders.push_back(RecorderSocket(params.outputPort()));
+	}
 
-	// Consruct HOG recorder here
+	// Construct HOG recorder if the flag is on.
 	if (params.outputHOG())
 	{
 		// Output the data based on record_root, but do not include record_root in the meta file, as it is also in that directory
@@ -167,7 +178,7 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 		hog_recorder.Open(hog_filename);
 	}
 		
-	// saving the videos	
+	// Save information of the video / image that will be recorded in the metadata file.
 	if (params.outputTracked())
 	{
 		if (params.isSequence())
@@ -185,7 +196,7 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 		}
 	}
 
-	// Prepare image recording
+	// Prepare aligned images recording if the flag is on.
 	if (params.outputAlignedFaces())
 	{
 		aligned_output_directory = out_name + "_aligned";
@@ -297,54 +308,74 @@ void RecorderOpenFace::SetObservationVisualization(const cv::Mat &vis_track)
 
 void RecorderOpenFace::WriteObservation()
 {
-
-	// Write out the CSV file (it will always be there, even if not outputting anything more but frame/face numbers)	
-	if(!csv_recorder.isOpen())
+	// If there exist RecorderResults, it means that results should be recorded.
+	if (results_recorders.size() > 0)
 	{
-		// As we are writing out the header, work out some things like number of landmarks, names of AUs etc.
-		int num_face_landmarks = landmarks_2D.rows / 2;
-		int num_eye_landmarks = (int)eye_landmarks2D.size();
-		int num_model_modes = pdm_params_local.rows;
-
-		std::vector<std::string> au_names_class;
-		for (auto au : au_occurences)
+		// If any (i.e. all) of the RecorderResults is not open yet (we take the one in the first
+		// position of the list for simplicity), initialize and open every one of them.
+		if (!results_recorders[0].IsOpen())
 		{
-			au_names_class.push_back(au.first);
+			// Pre-computing data for initializing the RecorderResults objects.
+			int num_face_landmarks = landmarks_2D.rows / 2;
+			int num_eye_landmarks = (int)eye_landmarks2D.size();
+			int num_model_modes = pdm_params_local.rows;
+
+			std::vector<std::string> au_names_class;
+			for (auto au : au_occurences)
+			{
+				au_names_class.push_back(au.first);
+			}
+			std::sort(au_names_class.begin(), au_names_class.end());
+
+			std::vector<std::string> au_names_reg;
+			for (auto au : au_intensities)
+			{
+				au_names_reg.push_back(au.first);
+			}
+			std::sort(au_names_reg.begin(), au_names_reg.end());
+
+			// Include in the metadata file where is the data being recorded to.
+			if (params.outputToCSV())
+			{
+				metadata_file << "Output csv: " << csv_filename << std::endl;
+			}
+			if (params.outputToSocket())
+			{
+				metadata_file << "Output port: " << params.outputPort() << std::endl;
+			}
+			
+			// Include in the metadata file which types of data we are recording.
+			metadata_file << "Gaze: " << params.outputGaze() << std::endl;
+			metadata_file << "AUs: " << params.outputAUs() << std::endl;
+			metadata_file << "Landmarks 2D: " << params.output2DLandmarks() << std::endl;
+			metadata_file << "Landmarks 3D: " << params.output3DLandmarks() << std::endl;
+			metadata_file << "Pose: " << params.outputPose() << std::endl;
+			metadata_file << "Shape parameters: " << params.outputPDMParams() << std::endl;
+
+			// Initialize and open every RecorderResults in the list.
+			for (auto results_recorder : results_recorders)
+			{
+				results_recorder.Init(params, num_face_landmarks, num_model_modes, num_eye_landmarks, au_names_class, au_names_reg);
+				results_recorder.Open();
+			}
 		}
 
-		std::sort(au_names_class.begin(), au_names_class.end());
-
-		std::vector<std::string> au_names_reg;
-		for (auto au : au_intensities)
+		// Write the results data to each RecorderResults object.
+		for (auto results_recorder : results_recorders)
 		{
-			au_names_reg.push_back(au.first);
+			results_recorder.Write(face_id, frame_number, timestamp, landmark_detection_success,
+				landmark_detection_confidence, landmarks_2D, landmarks_3D, pdm_params_local, pdm_params_global, head_pose,
+				gaze_direction0, gaze_direction1, gaze_angle, eye_landmarks2D, eye_landmarks3D, au_intensities, au_occurences);
 		}
-
-		std::sort(au_names_reg.begin(), au_names_reg.end());
-
-		metadata_file << "Output csv:" << csv_filename << std::endl;
-		metadata_file << "Gaze: " << params.outputGaze() << std::endl;
-		metadata_file << "AUs: " << params.outputAUs() << std::endl;
-		metadata_file << "Landmarks 2D: " << params.output2DLandmarks() << std::endl;
-		metadata_file << "Landmarks 3D: " << params.output3DLandmarks() << std::endl;
-		metadata_file << "Pose: " << params.outputPose() << std::endl;
-		metadata_file << "Shape parameters: " << params.outputPDMParams() << std::endl;
-
-		csv_filename = (fs::path(record_root) / csv_filename).string();
-		csv_recorder.Open(csv_filename, params.isSequence(), params.output2DLandmarks(), params.output3DLandmarks(), params.outputPDMParams(), params.outputPose(),
-			params.outputAUs(), params.outputGaze(), num_face_landmarks, num_model_modes, num_eye_landmarks, au_names_class, au_names_reg);
 	}
 
-	this->csv_recorder.WriteLine(face_id, frame_number, timestamp, landmark_detection_success, 
-		landmark_detection_confidence, landmarks_2D, landmarks_3D, pdm_params_local, pdm_params_global, head_pose,
-		gaze_direction0, gaze_direction1, gaze_angle, eye_landmarks2D, eye_landmarks3D, au_intensities, au_occurences);
-
+	// Write the HOG data via its appropriate recorder.
 	if(params.outputHOG())
 	{
 		this->hog_recorder.Write();
 	}
 
-	// Write aligned faces
+	// Write the aligned faces data.
 	if (params.outputAlignedFaces())
 	{
 
@@ -376,9 +407,7 @@ void RecorderOpenFace::WriteObservation()
 
 		// Clear the image
 		aligned_face = cv::Mat();
-
 	}
-
 }
 
 void RecorderOpenFace::WriteObservationTracked()

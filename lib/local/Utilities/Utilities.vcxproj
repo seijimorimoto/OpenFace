@@ -182,6 +182,7 @@
     <ClInclude Include="include\RecorderHOG.h" />
     <ClInclude Include="include\RecorderOpenFace.h" />
     <ClInclude Include="include\RecorderOpenFaceParameters.h" />
+    <ClInclude Include="include\RecorderResults.h" />
     <ClInclude Include="include\RecorderSocket.h" />
     <ClInclude Include="include\RotationHelpers.h" />
     <ClInclude Include="include\SequenceCapture.h" />

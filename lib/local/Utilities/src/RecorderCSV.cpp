@@ -36,40 +36,44 @@
 
 using namespace Utilities;
 
-// Default constructor initializes the variables
-RecorderCSV::RecorderCSV():output_file(){};
+// Default constructor for the recorder.
+RecorderCSV::RecorderCSV() : RecorderResults() {}
+
+// Constructor that receives the name of the file where the data is to be recorded to.
+RecorderCSV::RecorderCSV(std::string output_file_name) : RecorderResults()
+{
+	this->output_file_name = output_file_name;
+}
 
 // Making sure full stop is used for decimal point separation
 struct fullstop : std::numpunct<char> {
 	char do_decimal_point() const { return '.'; }
 };
 
-// Opening the file and preparing the header for it
-bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool output_2D_landmarks, bool output_3D_landmarks, bool output_model_params, bool output_pose, bool output_AUs, bool output_gaze,
-	int num_face_landmarks, int num_model_modes, int num_eye_landmarks, const std::vector<std::string>& au_names_class, const std::vector<std::string>& au_names_reg)
+// Initializes the object with the flags specifying which type of data is to be recorded in each write.
+// The parameters other than recordFlags are used when writing the header of the output file.
+void RecorderCSV::Init(const RecorderOpenFaceParameters& recordFlags, int num_face_landmarks, int num_model_modes, int num_eye_landmarks,
+	const std::vector<std::string>& au_names_class, const std::vector<std::string>& au_names_reg)
 {
+	this->recordFlags = recordFlags;
+	this->au_names_class = au_names_class;
+	this->au_names_reg = au_names_reg;
+	this->num_face_landmarks = num_face_landmarks;
+	this->num_model_modes = num_model_modes;
+	this->num_eye_landmarks = num_eye_landmarks;
+}
 
+// Opens the file and prepares the header for it
+bool RecorderCSV::Open()
+{
 	output_file.open(output_file_name, std::ios_base::out);
 	output_file.imbue(std::locale(output_file.getloc(), new fullstop));
 
 	if (!output_file.is_open())
 		return false;
-
-	this->is_sequence = is_sequence;
-
-	// Set up what we are recording
-	this->output_2D_landmarks = output_2D_landmarks;
-	this->output_3D_landmarks = output_3D_landmarks;
-	this->output_AUs = output_AUs;
-	this->output_gaze = output_gaze;
-	this->output_model_params = output_model_params;
-	this->output_pose = output_pose;
-
-	this->au_names_class = au_names_class;
-	this->au_names_reg = au_names_reg;
-
+	
 	// Different headers if we are writing out the results on a sequence or an individual image
-	if(this->is_sequence)
+	if (recordFlags.isSequence())
 	{
 		output_file << "frame, face_id, timestamp, confidence, success";
 	}
@@ -78,7 +82,7 @@ bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool outp
 		output_file << "face, confidence";
 	}
 
-	if (output_gaze)
+	if (recordFlags.outputGaze())
 	{
 		output_file << ", gaze_0_x, gaze_0_y, gaze_0_z, gaze_1_x, gaze_1_y, gaze_1_z, gaze_angle_x, gaze_angle_y";
 
@@ -105,12 +109,12 @@ bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool outp
 		}
 	}
 
-	if (output_pose)
+	if (recordFlags.outputPose())
 	{
 		output_file << ", pose_Tx, pose_Ty, pose_Tz, pose_Rx, pose_Ry, pose_Rz";
 	}
 
-	if (output_2D_landmarks)
+	if (recordFlags.output2DLandmarks())
 	{
 		for (int i = 0; i < num_face_landmarks; ++i)
 		{
@@ -122,7 +126,7 @@ bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool outp
 		}
 	}
 
-	if (output_3D_landmarks)
+	if (recordFlags.output3DLandmarks())
 	{
 		for (int i = 0; i < num_face_landmarks; ++i)
 		{
@@ -139,7 +143,7 @@ bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool outp
 	}
 
 	// Outputting model parameters (rigid and non-rigid), the first parameters are the 6 rigid shape parameters, they are followed by the non rigid shape parameters
-	if (output_model_params)
+	if (recordFlags.outputPDMParams())
 	{
 		output_file << ", p_scale, p_rx, p_ry, p_rz, p_tx, p_ty";
 		for (int i = 0; i < num_model_modes; ++i)
@@ -148,7 +152,7 @@ bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool outp
 		}
 	}
 
-	if (output_AUs)
+	if (recordFlags.outputAUs())
 	{
 		std::sort(this->au_names_reg.begin(), this->au_names_reg.end());
 		for (std::string reg_name : this->au_names_reg)
@@ -164,12 +168,10 @@ bool RecorderCSV::Open(std::string output_file_name, bool is_sequence, bool outp
 	}
 
 	output_file << std::endl;
-
-	return true;
-
 }
 
-void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool landmark_detection_success, double landmark_confidence,
+// Writes a line of data to the file.
+void RecorderCSV::Write(int face_id, int frame_num, double time_stamp, bool landmark_detection_success, double landmark_confidence,
 	const cv::Mat_<float>& landmarks_2D, const cv::Mat_<float>& landmarks_3D, const cv::Mat_<float>& pdm_model_params, const cv::Vec6f& rigid_shape_params, cv::Vec6f& pose_estimate,
 	const cv::Point3f& gazeDirection0, const cv::Point3f& gazeDirection1, const cv::Vec2f& gaze_angle, const std::vector<cv::Point2f>& eye_landmarks2d, const std::vector<cv::Point3f>& eye_landmarks3d,
 	const std::vector<std::pair<std::string, double> >& au_intensities, const std::vector<std::pair<std::string, double> >& au_occurences)
@@ -184,7 +186,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 	// Making sure fixed and not scientific notation is used
 	output_file << std::fixed;
 	output_file << std::noshowpoint;
-	if(is_sequence)
+	if(recordFlags.isSequence())
 	{
 		
 		output_file << std::setprecision(3);
@@ -200,7 +202,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 		output_file << face_id << ", " << landmark_confidence;
 	}
 	// Output the estimated gaze
-	if (output_gaze)
+	if (recordFlags.outputGaze())
 	{
 		output_file << std::setprecision(6);
 		output_file << ", " << gazeDirection0.x << ", " << gazeDirection0.y << ", " << gazeDirection0.z
@@ -240,7 +242,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 	}
 
 	// Output the estimated head pose
-	if (output_pose)
+	if (recordFlags.outputPose())
 	{
 		output_file << std::setprecision(1);
 		output_file << ", " << pose_estimate[0] << ", " << pose_estimate[1] << ", " << pose_estimate[2];
@@ -249,7 +251,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 	}
 
 	// Output the detected 2D facial landmarks
-	if (output_2D_landmarks)
+	if (recordFlags.output2DLandmarks())
 	{
 		output_file.precision(1);
 		// Output the 2D eye landmarks
@@ -260,7 +262,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 	}
 
 	// Output the detected 3D facial landmarks
-	if (output_3D_landmarks)
+	if (recordFlags.output3DLandmarks())
 	{
 		output_file.precision(1);
 		// Output the 2D eye landmarks
@@ -270,7 +272,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 		}
 	}
 
-	if (output_model_params)
+	if (recordFlags.outputPDMParams())
 	{
 		output_file.precision(3);
 		for (int i = 0; i < 6; ++i)
@@ -284,7 +286,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 		}
 	}
 
-	if (output_AUs)
+	if (recordFlags.outputAUs())
 	{
 
 		// write out ar the correct index
@@ -334,7 +336,7 @@ void RecorderCSV::WriteLine(int face_id, int frame_num, double time_stamp, bool 
 	output_file << std::endl;
 }
 
-// Closing the file and cleaning up
+// Closes the file and performs clean up work.
 void RecorderCSV::Close()
 {
 	output_file.close();
