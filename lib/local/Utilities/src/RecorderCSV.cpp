@@ -168,6 +168,7 @@ bool RecorderCSV::Open()
 	}
 
 	output_file << std::endl;
+	return true;
 }
 
 // Writes a line of data to the file.

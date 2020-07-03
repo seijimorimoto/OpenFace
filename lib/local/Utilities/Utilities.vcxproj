@@ -158,6 +158,16 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>libzmq-v142-mt-4_3_3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib\3rdParty\ZeroMQ\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent />
+    <PostBuildEvent>
+      <Command>xcopy /I /E /Y /D /C "$(SolutionDir)lib\3rdParty\ZeroMQ\bin\libzmq-v142-mt-4_3_3.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ImageCapture.cpp" />

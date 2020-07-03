@@ -23,6 +23,7 @@ bool RecorderSocket::Open()
 	zmq::context_t context(1); // Use a single IO thread.
 	this->socket = new zmq::socket_t(context, ZMQ_PUB /* Set this socket as a publisher. */);
 	this->socket->bind("tcp://*:" + std::to_string(this->port));
+	return true;
 }
 
 // Checks whether the internal socket managed by this class has been successfully opened or not.
@@ -203,14 +204,12 @@ void RecorderSocket::Write(int face_id, int frame_num, double time_stamp, bool l
 	{
 		ss << "AUs:";
 		ss << std::setprecision(2);
-		std::sort(au_intensities.begin(), au_intensities.end());
 		for (auto au : au_intensities)
 		{
 			ss << "," << au.first << ":" << au.second;
 		}
 		
 		ss << std::setprecision(1);
-		std::sort(au_occurences.begin(), au_occurences.end());
 		for (auto au : au_occurences)
 		{
 			ss << "," << au.first << ":" << au.second;
