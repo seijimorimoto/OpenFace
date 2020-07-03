@@ -141,8 +141,11 @@ int main(int argc, char **argv)
 		if (sequence_reader.IsWebcam())
 		{
 			INFO_STREAM("WARNING: using a webcam in feature extraction, Action Unit predictions will not be as accurate in real-time webcam mode");
-			INFO_STREAM("WARNING: using a webcam in feature extraction, forcing visualization of tracking to allow quitting the application (press q)");
-			visualizer.vis_track = true;
+			if (!visualizer.force_no_track)
+			{
+				INFO_STREAM("WARNING: using a webcam in feature extraction, forcing visualization of tracking to allow quitting the application (press q)");
+				visualizer.vis_track = true;
+			}
 		}
 
 		cv::Mat captured_image;

@@ -53,8 +53,6 @@ namespace Utilities
 			bool output_model_params, bool output_pose, bool output_AUs, bool output_gaze, bool output_hog, bool output_tracked,
 			bool output_aligned_faces, bool record_bad = true, bool output_to_csv = true, int port = -1, float fx = -1, float fy = -1, float cx = -1, float cy = -1, double fps_vid_out = 30);
 
-		RecorderOpenFaceParameters operator=(const RecorderOpenFaceParameters& params);
-
 		bool isSequence() const { return is_sequence; }
 		bool isFromWebcam() const { return is_from_webcam; }
 		bool output2DLandmarks() const { return output_2D_landmarks; }

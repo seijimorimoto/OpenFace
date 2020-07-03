@@ -91,6 +91,7 @@ namespace Utilities
 		bool vis_hog;
 		bool vis_align;
 		bool vis_aus;
+		bool force_no_track;
 
 		// Can be adjusted to show less confident frames
 		double visualisation_boundary = 0.4;

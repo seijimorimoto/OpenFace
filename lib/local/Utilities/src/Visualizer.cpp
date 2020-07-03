@@ -72,6 +72,7 @@ Visualizer::Visualizer(std::vector<std::string> arguments)
 	this->vis_hog = false;
 	this->vis_align = false;
 	this->vis_aus = false;
+	this->force_no_track = false;
 
 	for (size_t i = 0; i < arguments.size(); ++i)
 	{
@@ -97,6 +98,10 @@ Visualizer::Visualizer(std::vector<std::string> arguments)
 		else if (arguments[i].compare("-vis-aus") == 0)
 		{
 			this->vis_aus = true;
+		}
+		else if (arguments[i].compare("-force-no-track") == 0)
+		{
+			this->force_no_track = true;
 		}
 	}
 
@@ -430,8 +435,11 @@ char Visualizer::ShowObservation()
 	}
 	if (vis_track)
 	{
-		cv::imshow("tracking result", captured_image);
-		ovservation_shown = true;
+		if (!force_no_track)
+		{
+			cv::imshow("tracking result", captured_image);
+			ovservation_shown = true;
+		}
 	}
 	
 	// Only perform waitKey if something was shown

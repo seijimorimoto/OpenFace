@@ -7,6 +7,7 @@ using namespace Utilities;
 RecorderSocket::RecorderSocket(int port) : RecorderResults()
 {
 	this->port = port;
+	this->context = new zmq::context_t();
 }
 
 // Initializes the object with the flags specifying which type of data is to be sent via the socket in each write.
@@ -20,8 +21,7 @@ void RecorderSocket::Init(const RecorderOpenFaceParameters& recordFlags, int num
 // Opens a socket so that it can later send data to the port pointed by the socket.
 bool RecorderSocket::Open()
 {
-	zmq::context_t context(1); // Use a single IO thread.
-	this->socket = new zmq::socket_t(context, ZMQ_PUB /* Set this socket as a publisher. */);
+	this->socket = new zmq::socket_t(*context, ZMQ_PUB /* Set this socket as a publisher. */);
 	this->socket->bind("tcp://*:" + std::to_string(this->port));
 	return true;
 }
@@ -36,7 +36,12 @@ bool RecorderSocket::IsOpen()
 void RecorderSocket::Close()
 {
 	if (this->IsOpen())
+	{
 		this->socket->close();
+		this->context->close();
+		delete this->socket;
+		delete this->context;
+	}
 }
 
 // Prepares a message and sends it through the socket.
@@ -153,6 +158,7 @@ void RecorderSocket::Write(int face_id, int frame_num, double time_stamp, bool l
 			{
 				ss << ",y_" << i % num_landmarks << ":" << lmk;
 			}
+			i++;
 		}
 		SendData(ss);
 	}
@@ -178,6 +184,7 @@ void RecorderSocket::Write(int face_id, int frame_num, double time_stamp, bool l
 			{
 				ss << ",Z_" << i % num_landmarks << ":" << lmk;
 			}
+			i++;
 		}
 		SendData(ss);
 	}
