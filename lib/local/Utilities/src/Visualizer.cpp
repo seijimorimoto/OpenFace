@@ -72,7 +72,10 @@ Visualizer::Visualizer(std::vector<std::string> arguments)
 	this->vis_hog = false;
 	this->vis_align = false;
 	this->vis_aus = false;
-	this->force_no_track = false;
+	this->vis_gaze = false;
+	this->vis_pose = false;
+	this->vis_landmarks = false;
+	this->force_no_vis_track = false;
 
 	for (size_t i = 0; i < arguments.size(); ++i)
 	{
@@ -99,9 +102,24 @@ Visualizer::Visualizer(std::vector<std::string> arguments)
 		{
 			this->vis_aus = true;
 		}
-		else if (arguments[i].compare("-force-no-track") == 0)
+		else if (arguments[i].compare("-vis-gaze") == 0)
 		{
-			this->force_no_track = true;
+			this->vis_gaze = true;
+			this->vis_track = false;
+		}
+		else if (arguments[i].compare("-vis-pose") == 0)
+		{
+			this->vis_pose = true;
+			this->vis_track = false;
+		}
+		else if (arguments[i].compare("-vis-landmarks") == 0)
+		{
+			this->vis_landmarks = true;
+			this->vis_track = false;
+		}
+		else if (arguments[i].compare("-force-no-vis-track") == 0)
+		{
+			this->force_no_vis_track = true;
 		}
 	}
 
@@ -433,9 +451,9 @@ char Visualizer::ShowObservation()
 		cv::imshow("action units", action_units_image);
 		ovservation_shown = true;
 	}
-	if (vis_track)
+	if (vis_track || vis_gaze || vis_pose || vis_landmarks)
 	{
-		if (!force_no_track)
+		if (!force_no_vis_track)
 		{
 			cv::imshow("tracking result", captured_image);
 			ovservation_shown = true;

@@ -88,10 +88,13 @@ namespace Utilities
 
 		// Keeping track of what we're visualizing
 		bool vis_track;
+		bool vis_gaze;
+		bool vis_pose;
+		bool vis_landmarks;
 		bool vis_hog;
 		bool vis_align;
 		bool vis_aus;
-		bool force_no_track;
+		bool force_no_vis_track;
 
 		// Can be adjusted to show less confident frames
 		double visualisation_boundary = 0.4;

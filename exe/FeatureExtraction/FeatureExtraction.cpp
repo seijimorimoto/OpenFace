@@ -141,10 +141,13 @@ int main(int argc, char **argv)
 		if (sequence_reader.IsWebcam())
 		{
 			INFO_STREAM("WARNING: using a webcam in feature extraction, Action Unit predictions will not be as accurate in real-time webcam mode");
-			if (!visualizer.force_no_track)
+			if (!visualizer.force_no_vis_track)
 			{
-				INFO_STREAM("WARNING: using a webcam in feature extraction, forcing visualization of tracking to allow quitting the application (press q)");
-				visualizer.vis_track = true;
+				if (!visualizer.vis_track && !visualizer.vis_gaze && !visualizer.vis_pose && !visualizer.vis_landmarks)
+				{
+					INFO_STREAM("WARNING: using a webcam in feature extraction, forcing visualization of tracking to allow quitting the application (press q)");
+					visualizer.vis_track = true;
+				}
 			}
 		}
 
@@ -172,7 +175,6 @@ int main(int argc, char **argv)
 			// Converting to grayscale
 			cv::Mat_<uchar> grayscale_image = sequence_reader.GetGrayFrame();
 
-
 			// The actual facial landmark detection / tracking
 			bool detection_success = LandmarkDetector::DetectLandmarksInVideo(captured_image, face_model, det_parameters, grayscale_image);
 			
@@ -181,16 +183,20 @@ int main(int argc, char **argv)
 
 			if (detection_success && face_model.eye_model)
 			{
-				GazeAnalysis::EstimateGaze(face_model, gazeDirection0, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, true);
-				GazeAnalysis::EstimateGaze(face_model, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, false);
-				gazeAngle = GazeAnalysis::GetGazeAngle(gazeDirection0, gazeDirection1);
+				// Only perform gaze estimation if we are going to output it or we are going to visualize it.
+				if (recording_params.outputGaze() || (!visualizer.force_no_vis_track && (visualizer.vis_track || visualizer.vis_gaze)))
+				{
+					GazeAnalysis::EstimateGaze(face_model, gazeDirection0, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, true);
+					GazeAnalysis::EstimateGaze(face_model, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, false);
+					gazeAngle = GazeAnalysis::GetGazeAngle(gazeDirection0, gazeDirection1);
+				}
 			}
 			
 			// Do face alignment
 			cv::Mat sim_warped_img;
 			cv::Mat_<double> hog_descriptor; int num_hog_rows = 0, num_hog_cols = 0;
 
-			// Perform AU detection and HOG feature extraction, as this can be expensive only compute it if needed by output or visualization
+			// Perform AU detection and HOG feature extraction. As this can be expensive, only compute it if needed by output or visualization
 			if (recording_params.outputAlignedFaces() || recording_params.outputHOG() || recording_params.outputAUs() || visualizer.vis_align || visualizer.vis_hog || visualizer.vis_aus)
 			{
 				face_analyser.AddNextFrame(captured_image, face_model.detected_landmarks, face_model.detection_success, sequence_reader.time_stamp, sequence_reader.IsWebcam());
@@ -198,22 +204,33 @@ int main(int argc, char **argv)
 				face_analyser.GetLatestHOG(hog_descriptor, num_hog_rows, num_hog_cols);
 			}
 			
-			// Work out the pose of the head from the tracked model
-			cv::Vec6d pose_estimate = LandmarkDetector::GetPose(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy);
+			// Work out the pose of the head from the tracked model. Only do it if needed for output or visualization.
+			cv::Vec6d pose_estimate;
+			if (recording_params.outputPose() || (!visualizer.force_no_vis_track && (visualizer.vis_track || visualizer.vis_gaze)))
+				pose_estimate = LandmarkDetector::GetPose(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy);
 
 			// Keeping track of FPS
 			fps_tracker.AddFrame();
 
-			// Displaying the tracking visualizations
+			// Displaying the tracking visualizations. Each visualization is only set if the user requested it.
 			visualizer.SetImage(captured_image, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy);
-			visualizer.SetObservationFaceAlign(sim_warped_img);
-			visualizer.SetObservationHOG(hog_descriptor, num_hog_rows, num_hog_cols);
-			visualizer.SetObservationLandmarks(face_model.detected_landmarks, face_model.detection_certainty, face_model.GetVisibilities());
-			visualizer.SetObservationPose(pose_estimate, face_model.detection_certainty);
-			visualizer.SetObservationGaze(gazeDirection0, gazeDirection1, LandmarkDetector::CalculateAllEyeLandmarks(face_model), LandmarkDetector::Calculate3DEyeLandmarks(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy), face_model.detection_certainty);
-			visualizer.SetObservationActionUnits(face_analyser.GetCurrentAUsReg(), face_analyser.GetCurrentAUsClass());
-			visualizer.SetFps(fps_tracker.GetFPS());
-
+			if (visualizer.vis_align)
+				visualizer.SetObservationFaceAlign(sim_warped_img);
+			if (visualizer.vis_hog)
+				visualizer.SetObservationHOG(hog_descriptor, num_hog_rows, num_hog_cols);
+			if (!visualizer.force_no_vis_track || recording_params.outputTracked())
+			{
+				if (visualizer.vis_track || visualizer.vis_landmarks)
+					visualizer.SetObservationLandmarks(face_model.detected_landmarks, face_model.detection_certainty, face_model.GetVisibilities());
+				if (visualizer.vis_track || visualizer.vis_pose)
+					visualizer.SetObservationPose(pose_estimate, face_model.detection_certainty);
+				if (visualizer.vis_track || visualizer.vis_gaze)
+					visualizer.SetObservationGaze(gazeDirection0, gazeDirection1, LandmarkDetector::CalculateAllEyeLandmarks(face_model), LandmarkDetector::Calculate3DEyeLandmarks(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy), face_model.detection_certainty);
+				visualizer.SetFps(fps_tracker.GetFPS());
+			}
+			if (visualizer.vis_aus)
+				visualizer.SetObservationActionUnits(face_analyser.GetCurrentAUsReg(), face_analyser.GetCurrentAUsClass());
+			
 			// detect key presses
 			char character_press = visualizer.ShowObservation();
 			
@@ -223,18 +240,27 @@ int main(int argc, char **argv)
 				break;
 			}
 
-			// Setting up the recorder output
-			open_face_rec.SetObservationHOG(detection_success, hog_descriptor, num_hog_rows, num_hog_cols, 31); // The number of channels in HOG is fixed at the moment, as using FHOG
-			open_face_rec.SetObservationVisualization(visualizer.GetVisImage());
-			open_face_rec.SetObservationActionUnits(face_analyser.GetCurrentAUsReg(), face_analyser.GetCurrentAUsClass());
-			open_face_rec.SetObservationLandmarks(face_model.detected_landmarks, face_model.GetShape(sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy),
-				face_model.params_global, face_model.params_local, face_model.detection_certainty, detection_success);
-			open_face_rec.SetObservationPose(pose_estimate);
-			open_face_rec.SetObservationGaze(gazeDirection0, gazeDirection1, gazeAngle, LandmarkDetector::CalculateAllEyeLandmarks(face_model), LandmarkDetector::Calculate3DEyeLandmarks(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
+			// Setting up the recorder output. Each type of output is only set if the user requested it.
+			if (recording_params.outputHOG())
+				open_face_rec.SetObservationHOG(detection_success, hog_descriptor, num_hog_rows, num_hog_cols, 31); // The number of channels in HOG is fixed at the moment, as using FHOG
+			if (recording_params.outputTracked())
+				open_face_rec.SetObservationVisualization(visualizer.GetVisImage());
+			if (recording_params.outputAUs())
+				open_face_rec.SetObservationActionUnits(face_analyser.GetCurrentAUsReg(), face_analyser.GetCurrentAUsClass());
+			// SetObservationLandmarks implies setting the 2D, 3D landmarks, the PDM parameters as well as the detection success, which is used when outputting aligned
+			// faces. Because of this, SetObservationLandmarks must be called whenever the user requested to output any of the mentioned things.
+			if (recording_params.output2DLandmarks() || recording_params.output3DLandmarks() || recording_params.outputPDMParams() || recording_params.outputAlignedFaces())
+				open_face_rec.SetObservationLandmarks(face_model.detected_landmarks, face_model.GetShape(sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy),
+					face_model.params_global, face_model.params_local, face_model.detection_certainty, detection_success);
+			if (recording_params.outputPose())
+				open_face_rec.SetObservationPose(pose_estimate);
+			if (recording_params.outputGaze())
+				open_face_rec.SetObservationGaze(gazeDirection0, gazeDirection1, gazeAngle, LandmarkDetector::CalculateAllEyeLandmarks(face_model), LandmarkDetector::Calculate3DEyeLandmarks(face_model, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
+			if (recording_params.outputAlignedFaces())
+				open_face_rec.SetObservationFaceAlign(sim_warped_img);
 			open_face_rec.SetObservationTimestamp(sequence_reader.time_stamp);
 			open_face_rec.SetObservationFaceID(0);
 			open_face_rec.SetObservationFrameNumber(sequence_reader.GetFrameNumber());
-			open_face_rec.SetObservationFaceAlign(sim_warped_img);
 			open_face_rec.WriteObservation();
 			open_face_rec.WriteObservationTracked();
 			
@@ -260,7 +286,8 @@ int main(int argc, char **argv)
 		sequence_reader.Close();
 		INFO_STREAM("Closed successfully");
 
-		if (recording_params.outputAUs())
+		// Postprocess the AUs only if they were being outputted to a CSV file
+		if (recording_params.outputAUs() && recording_params.outputToCSV())
 		{
 			INFO_STREAM("Postprocessing the Action Unit predictions");
 			face_analyser.PostprocessOutputFile(open_face_rec.GetCSVFile());
