@@ -44,6 +44,7 @@
 // OpenCV includes
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <zmq.hpp>
 
 #include <thread>
 
@@ -109,6 +110,9 @@ namespace Utilities
 		// Separate method for writing tracked video observation, this is done because video observation is written once a frame/image, other observations can happen multiple times a frame/image
 		void WriteObservationTracked();
 
+		// Writes out the visualization (tracked video / image) through a port.
+		void WriteVisualizationToPort();
+
 		std::string GetCSVFile() { return csv_filename; }
 
 	private:
@@ -171,6 +175,10 @@ namespace Utilities
 		// For video writing
 		cv::VideoWriter video_writer;
 		std::string media_filename;
+
+		// For sending the visualization through a port.
+		zmq::context_t* context;
+		zmq::socket_t* socket;
 		
 		// Do not exceed 100MB in the concurrent queue
 		const int TRACKED_QUEUE_CAPACITY = 100;

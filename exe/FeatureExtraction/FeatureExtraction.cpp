@@ -218,7 +218,7 @@ int main(int argc, char **argv)
 				visualizer.SetObservationFaceAlign(sim_warped_img);
 			if (visualizer.vis_hog)
 				visualizer.SetObservationHOG(hog_descriptor, num_hog_rows, num_hog_cols);
-			if (!visualizer.force_no_vis_track || recording_params.outputTracked())
+			if (!visualizer.force_no_vis_track || recording_params.outputTracked() || recording_params.outputVisualizationToPort())
 			{
 				if (visualizer.vis_track || visualizer.vis_landmarks)
 					visualizer.SetObservationLandmarks(face_model.detected_landmarks, face_model.detection_certainty, face_model.GetVisibilities());
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 			// Setting up the recorder output. Each type of output is only set if the user requested it.
 			if (recording_params.outputHOG())
 				open_face_rec.SetObservationHOG(detection_success, hog_descriptor, num_hog_rows, num_hog_cols, 31); // The number of channels in HOG is fixed at the moment, as using FHOG
-			if (recording_params.outputTracked())
+			if (recording_params.outputTracked() || recording_params.outputVisualizationToPort())
 				open_face_rec.SetObservationVisualization(visualizer.GetVisImage());
 			if (recording_params.outputAUs())
 				open_face_rec.SetObservationActionUnits(face_analyser.GetCurrentAUsReg(), face_analyser.GetCurrentAUsClass());
@@ -263,6 +263,7 @@ int main(int argc, char **argv)
 			open_face_rec.SetObservationFrameNumber(sequence_reader.GetFrameNumber());
 			open_face_rec.WriteObservation();
 			open_face_rec.WriteObservationTracked();
+			open_face_rec.WriteVisualizationToPort();
 			
 			// Reporting progress
 			if (sequence_reader.GetProgress() >= reported_completion / 10.0)

@@ -74,6 +74,7 @@ RecorderOpenFaceParameters::RecorderOpenFaceParameters(std::vector<std::string> 
 
 	this->output_to_csv = true;
 	this->output_to_socket = false;
+	this->output_visualization_to_port = false;
 	
 	this->record_aligned_bad = true;
 
@@ -147,6 +148,11 @@ RecorderOpenFaceParameters::RecorderOpenFaceParameters(std::vector<std::string> 
 			this->output_to_socket = true;
 			this->port = stoi(arguments[i + 1]);
 			i++;
+		}
+		else if (arguments[i].compare("-out-vis-port") == 0)
+		{
+			this->output_visualization_to_port = true;
+			this->visualization_port = stoi(arguments[i + 1]);
 		}
 	}
 

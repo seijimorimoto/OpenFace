@@ -162,7 +162,7 @@
       </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;CPPINEROP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>./;$(SolutionDir)lib\local\LandmarkDetector\include;$(SolutionDir)lib\local\FaceAnalyser\include;$(SolutionDir)lib\local\GazeAnalyser\include;$(SolutionDir)lib\local\Utilities\include;$(SolutionDir)lib\3rdParty\CameraEnumerator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;$(SolutionDir)lib\local\LandmarkDetector\include;$(SolutionDir)lib\local\FaceAnalyser\include;$(SolutionDir)lib\local\GazeAnalyser\include;$(SolutionDir)lib\local\Utilities\include;$(SolutionDir)lib\3rdParty\CameraEnumerator;$(SolutionDir)\lib\3rdParty\cppzmq\include;$(SolutionDir)\lib\3rdParty\ZeroMQ\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableEnhancedInstructionSet>
       </EnableEnhancedInstructionSet>

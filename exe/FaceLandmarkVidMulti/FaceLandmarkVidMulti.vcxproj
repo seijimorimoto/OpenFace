@@ -147,7 +147,7 @@
       <FunctionLevelLinking>
       </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)\lib\local\Utilities\include;$(SolutionDir)\lib\local\FaceAnalyser\include;$(SolutionDir)\lib\local\GazeAnalyser\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\lib\local\FaceAnalyser\include;$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)\lib\local\GazeAnalyser\include;$(SolutionDir)\lib\local\Utilities\include;$(SolutionDir)\lib\3rdParty\cppzmq\include;$(SolutionDir)\lib\3rdParty\ZeroMQ\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>
       </EnableEnhancedInstructionSet>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>

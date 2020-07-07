@@ -3,7 +3,7 @@
 //
 // ACADEMIC OR NON-PROFIT ORGANIZATION NONCOMMERCIAL RESEARCH USE ONLY
 //
-// BY USING OR DOWNLOADING THE SOFTWARE, YOU ARE AGREEING TO THE TERMS OF THIS LICENSE AGREEMENT.  
+// BY USING OR DOWNLOADING THE SOFTWARE, YOU ARE AGREEING TO THE TERMS OF THIS LICENSE AGREEMENT.
 // IF YOU DO NOT AGREE WITH THESE TERMS, YOU MAY NOT USE OR DOWNLOAD THE SOFTWARE.
 //
 // License can be found in OpenFace-license.txt
@@ -14,20 +14,20 @@
 //
 //       OpenFace 2.0: Facial Behavior Analysis Toolkit
 //       Tadas Baltrušaitis, Amir Zadeh, Yao Chong Lim, and Louis-Philippe Morency
-//       in IEEE International Conference on Automatic Face and Gesture Recognition, 2018  
+//       in IEEE International Conference on Automatic Face and Gesture Recognition, 2018
 //
 //       Convolutional experts constrained local model for facial landmark detection.
 //       A. Zadeh, T. Baltrušaitis, and Louis-Philippe Morency,
-//       in Computer Vision and Pattern Recognition Workshops, 2017.    
+//       in Computer Vision and Pattern Recognition Workshops, 2017.
 //
 //       Rendering of Eyes for Eye-Shape Registration and Gaze Estimation
-//       Erroll Wood, Tadas Baltrušaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling 
-//       in IEEE International. Conference on Computer Vision (ICCV),  2015 
+//       Erroll Wood, Tadas Baltrušaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling
+//       in IEEE International. Conference on Computer Vision (ICCV),  2015
 //
 //       Cross-dataset learning and person-specific normalisation for automatic Action Unit detection
-//       Tadas Baltrušaitis, Marwa Mahmoud, and Peter Robinson 
-//       in Facial Expression Recognition and Analysis Challenge, 
-//       IEEE International Conference on Automatic Face and Gesture Recognition, 2015 
+//       Tadas Baltrušaitis, Marwa Mahmoud, and Peter Robinson
+//       in Facial Expression Recognition and Analysis Challenge,
+//       IEEE International Conference on Automatic Face and Gesture Recognition, 2015
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "stdafx_ut.h"
@@ -48,7 +48,7 @@ void CreateDirectory(std::string output_path)
 		output_path = output_path.substr(0, output_path.size() - 1);
 	}
 
-	// Creating the right directory structure	
+	// Creating the right directory structure
 	if (!fs::exists(output_path))
 	{
 		bool success = fs::create_directories(output_path);
@@ -90,7 +90,7 @@ void RecorderOpenFace::VideoWritingTask(bool is_sequence)
 			{
 				WARN_STREAM("Could not output tracked image");
 			}
-		}		
+		}
 	}
 }
 
@@ -139,7 +139,7 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 	{
 		std::string input_filename_relative = in_filename;
 		std::string input_filename_full = in_filename;
-		
+
 		if (!fs::path(input_filename_full).is_absolute())
 		{
 			input_filename_full = fs::canonical(input_filename_relative).string();
@@ -161,7 +161,7 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 		csv_filename = out_name + ".csv";
 		results_recorders.push_back(new RecorderCSV((fs::path(record_root) / csv_filename).string()));
 	}
-	
+
 	// Add a Socket recorder to the list of RecorderResults if the flag is on.
 	if (params.outputToSocket())
 	{
@@ -177,7 +177,7 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 		hog_filename = (fs::path(record_root) / hog_filename).string();
 		hog_recorder.Open(hog_filename);
 	}
-		
+
 	// Save information of the video / image that will be recorded in the metadata file.
 	if (params.outputTracked())
 	{
@@ -196,13 +196,19 @@ void RecorderOpenFace::PrepareRecording(const std::string& in_filename)
 		}
 	}
 
+	// Save information in the metadata file of the port where the video / image will be sent through (if any).
+	if (params.outputVisualizationToPort())
+	{
+		metadata_file << "Output visualization port:" << params.getVisualizationPort() << std::endl;
+	}
+
 	// Prepare aligned images recording if the flag is on.
 	if (params.outputAlignedFaces())
 	{
 		aligned_output_directory = out_name + "_aligned";
 		metadata_file << "Output aligned directory:" << this->aligned_output_directory << std::endl;
 		this->aligned_output_directory = (fs::path(record_root) / this->aligned_output_directory).string();
-		CreateDirectory(aligned_output_directory);		
+		CreateDirectory(aligned_output_directory);
 	}
 
 	this->frame_number = 0;
@@ -267,7 +273,6 @@ RecorderOpenFace::RecorderOpenFace(const std::string in_filename, const Recorder
 	}
 
 	PrepareRecording(in_filename);
-
 }
 
 RecorderOpenFace::RecorderOpenFace(const std::string in_filename, const RecorderOpenFaceParameters& parameters, std::string output_directory):video_writer(), params(parameters)
@@ -291,7 +296,6 @@ RecorderOpenFace::RecorderOpenFace(const std::string in_filename, const Recorder
 	PrepareRecording(in_filename);
 }
 
-
 void RecorderOpenFace::SetObservationFaceAlign(const cv::Mat& aligned_face)
 {
 	this->aligned_face = aligned_face;
@@ -299,11 +303,10 @@ void RecorderOpenFace::SetObservationFaceAlign(const cv::Mat& aligned_face)
 
 void RecorderOpenFace::SetObservationVisualization(const cv::Mat &vis_track)
 {
-	if (params.outputTracked())
+	if (params.outputTracked() || params.outputVisualizationToPort())
 	{
 		vis_to_out = vis_track;
 	}
-
 }
 
 void RecorderOpenFace::WriteObservation()
@@ -343,7 +346,7 @@ void RecorderOpenFace::WriteObservation()
 			{
 				metadata_file << "Output port: " << params.outputPort() << std::endl;
 			}
-			
+
 			// Include in the metadata file which types of data we are recording.
 			metadata_file << "Gaze: " << params.outputGaze() << std::endl;
 			metadata_file << "AUs: " << params.outputAUs() << std::endl;
@@ -364,13 +367,13 @@ void RecorderOpenFace::WriteObservation()
 		for (auto results_recorder : results_recorders)
 		{
 			results_recorder->Write(face_id, frame_number, timestamp, landmark_detection_success,
-				landmark_detection_confidence, landmarks_2D, landmarks_3D, pdm_params_local, pdm_params_global, head_pose,
-				gaze_direction0, gaze_direction1, gaze_angle, eye_landmarks2D, eye_landmarks3D, au_intensities, au_occurences);
+									landmark_detection_confidence, landmarks_2D, landmarks_3D, pdm_params_local, pdm_params_global, head_pose,
+									gaze_direction0, gaze_direction1, gaze_angle, eye_landmarks2D, eye_landmarks3D, au_intensities, au_occurences);
 		}
 	}
 
 	// Write the HOG data via its appropriate recorder.
-	if(params.outputHOG())
+	if (params.outputHOG())
 	{
 		this->hog_recorder.Write();
 	}
@@ -382,17 +385,17 @@ void RecorderOpenFace::WriteObservation()
 		if (!aligned_writing_thread_started)
 		{
 			aligned_writing_thread_started = true;
-			int capacity = (1024 * 1024 * ALIGNED_QUEUE_CAPACITY) / (aligned_face.size().width *aligned_face.size().height * aligned_face.channels()) + 1;
+			int capacity = (1024 * 1024 * ALIGNED_QUEUE_CAPACITY) / (aligned_face.size().width * aligned_face.size().height * aligned_face.channels()) + 1;
 			aligned_face_queue.set_capacity(capacity);
 
-			// Start the alignment output thread			
+			// Start the alignment output thread
 			aligned_writing_thread = std::thread(&RecorderOpenFace::AlignedImageWritingTask, this);
 		}
 
 		char name[100];
 
 		// Filename is based on frame number (TODO stringstream this)
-		if(params.isSequence())
+		if (params.isSequence())
 			std::sprintf(name, "frame_det_%02d_%06d.", face_id, frame_number);
 		else
 			std::sprintf(name, "face_det_%06d.", face_id);
@@ -400,7 +403,7 @@ void RecorderOpenFace::WriteObservation()
 		// Construct the output filename
 		std::string out_file = (fs::path(aligned_output_directory) / fs::path(std::string(name) + params.imageFormatAligned())).string();
 
-		if(params.outputBadAligned() || landmark_detection_success)
+		if (params.outputBadAligned() || landmark_detection_success)
 		{
 			aligned_face_queue.push(std::pair<std::string, cv::Mat>(out_file, aligned_face));
 		}
@@ -412,10 +415,8 @@ void RecorderOpenFace::WriteObservation()
 
 void RecorderOpenFace::WriteObservationTracked()
 {
-
 	if (params.outputTracked())
 	{
-
 		if (!tracked_writing_thread_started)
 		{
 			tracked_writing_thread_started = true;
@@ -444,7 +445,6 @@ void RecorderOpenFace::WriteObservationTracked()
 
 			// Start the video and tracked image writing thread
 			video_writing_thread = std::thread(&RecorderOpenFace::VideoWritingTask, this, params.isSequence());
-
 		}
 
 		if (vis_to_out.empty())
@@ -463,6 +463,26 @@ void RecorderOpenFace::WriteObservationTracked()
 
 		// Clear the output
 		vis_to_out = cv::Mat();
+	}
+}
+
+void RecorderOpenFace::WriteVisualizationToPort()
+{
+	if (params.outputVisualizationToPort())
+	{
+		if (context == NULL)
+		{
+			context = new zmq::context_t();
+			socket = new zmq::socket_t(*context, ZMQ_PUB);
+			socket->bind("tcp://*:" + std::to_string(params.getVisualizationPort()));
+		}
+
+		std::vector<uchar> buffer;
+		if (!vis_to_out.empty())
+		{
+			cv::imencode(".jpg", vis_to_out, buffer);
+			socket->send(buffer.data(), buffer.size());
+		}
 	}
 }
 
@@ -488,9 +508,8 @@ void RecorderOpenFace::SetObservationFaceID(int face_id)
 	this->face_id = face_id;
 }
 
-
 void RecorderOpenFace::SetObservationLandmarks(const cv::Mat_<float>& landmarks_2D, const cv::Mat_<float>& landmarks_3D,
-	const cv::Vec6f& pdm_params_global, const cv::Mat_<float>& pdm_params_local, double confidence, bool success)
+											   const cv::Vec6f& pdm_params_global, const cv::Mat_<float>& pdm_params_local, double confidence, bool success)
 {
 	this->landmarks_2D = landmarks_2D;
 	this->landmarks_3D = landmarks_3D;
@@ -498,7 +517,6 @@ void RecorderOpenFace::SetObservationLandmarks(const cv::Mat_<float>& landmarks_
 	this->pdm_params_local = pdm_params_local;
 	this->landmark_detection_confidence = confidence;
 	this->landmark_detection_success = success;
-
 }
 
 void RecorderOpenFace::SetObservationPose(const cv::Vec6f& pose)
@@ -507,14 +525,14 @@ void RecorderOpenFace::SetObservationPose(const cv::Vec6f& pose)
 }
 
 void RecorderOpenFace::SetObservationActionUnits(const std::vector<std::pair<std::string, double> >& au_intensities,
-	const std::vector<std::pair<std::string, double> >& au_occurences)
+												 const std::vector<std::pair<std::string, double> >& au_occurences)
 {
 	this->au_intensities = au_intensities;
 	this->au_occurences = au_occurences;
 }
 
 void RecorderOpenFace::SetObservationGaze(const cv::Point3f& gaze_direction0, const cv::Point3f& gaze_direction1,
-	const cv::Vec2f& gaze_angle, const std::vector<cv::Point2f>& eye_landmarks2D, const std::vector<cv::Point3f>& eye_landmarks3D)
+										  const cv::Vec2f& gaze_angle, const std::vector<cv::Point2f>& eye_landmarks2D, const std::vector<cv::Point3f>& eye_landmarks3D)
 {
 	this->gaze_direction0 = gaze_direction0;
 	this->gaze_direction1 = gaze_direction1;
@@ -527,7 +545,6 @@ RecorderOpenFace::~RecorderOpenFace()
 {
 	this->Close();
 }
-
 
 void RecorderOpenFace::Close()
 {
@@ -554,6 +571,3 @@ void RecorderOpenFace::Close()
 	video_writer.release();
 	metadata_file.close();
 }
-
-
-

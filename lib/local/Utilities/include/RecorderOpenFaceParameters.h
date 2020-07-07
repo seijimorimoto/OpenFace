@@ -66,6 +66,7 @@ namespace Utilities
 		bool outputAlignedFaces() const { return output_aligned_faces; }
 		bool outputToCSV() const { return output_to_csv; }
 		bool outputToSocket() const { return output_to_socket; }
+		bool outputVisualizationToPort() const { return output_visualization_to_port; }
 		std::string outputCodec() const { return output_codec; }
 		std::string imageFormatAligned() const { return image_format_aligned; }
 		std::string imageFormatVisualization() const { return image_format_visualization; }
@@ -78,6 +79,7 @@ namespace Utilities
 		float getFy() const { return fy; }
 		float getCx() const { return cx; }
 		float getCy() const { return cy; }
+		int getVisualizationPort() const { return visualization_port; }
 
 		void setOutputAUs(bool output_AUs) { this->output_AUs = output_AUs; }
 		void setOutputGaze(bool output_gaze) { this->output_gaze = output_gaze; }
@@ -104,6 +106,10 @@ namespace Utilities
 		bool output_to_csv;
 		bool output_to_socket;
 		int port;
+
+		// Whether to send the analyzed image / frame via a socket.
+		bool output_visualization_to_port;
+		int visualization_port;
 		
 		// Should the algined faces be recorded even if the detection failed (blank images)
 		bool record_aligned_bad;
